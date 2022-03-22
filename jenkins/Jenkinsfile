@@ -38,8 +38,7 @@ pipeline {
                 */
             }
         }
-    }
-    stage('Test') {  // Définit une étape appelée Test qui apparaît sur l'interface utilisateur de Jenkins.
+        stage('Test') {  // Définit une étape appelée Test qui apparaît sur l'interface utilisateur de Jenkins.
             agent {
                 docker {
                     image 'qnib/pytest'
@@ -68,4 +67,5 @@ pipeline {
                 }
             }
         }
+    }
 }
