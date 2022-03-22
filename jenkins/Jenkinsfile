@@ -39,4 +39,33 @@ pipeline {
             }
         }
     }
+    stage('Test') {  // Définit une étape appelée Test qui apparaît sur l'interface utilisateur de Jenkins.
+            agent {
+                docker {
+                    image 'qnib/pytest'
+                }
+            }
+            steps {
+                sh 'py.test --junit-xml test-reports/results.xml sources/test_calc.py'
+                /*
+                Cette étape sh exécute la commande py.test de pytest sur sources/test_calc.py, qui exécute un ensemble de tests 
+                unitaires (définis dans test_calc.py) sur la fonction add2 de la bibliothèque "calc" (utilisée par votre 
+                application Python simple add2vals). Le : --junit-xml test-reports/results.xml permet à py.test de générer un 
+                rapport JUnit XML, qui est sauvegardé dans test-reports/results.xml (dans le répertoire 
+                /var/jenkins_home/workspace/simple-python-pyinstaller-app du conteneur Jenkins).
+                */
+            }
+            post {
+                always {
+                    junit 'test-reports/results.xml'
+                    /*
+                    Cette étape junit (fournie par le plugin JUnit) archive le rapport XML JUnit (généré par la commande 
+                    py.test ci-dessus) et expose les résultats via l'interface Jenkins. Dans Blue Ocean, les résultats 
+                    sont accessibles via la page Tests d'une exécution Pipeline. La condition always de la section post qui 
+                    contient cette étape junit garantit que l'étape est toujours exécutée à la fin de l'étape Test, quel que 
+                    soit le résultat de l'étape.
+                    */
+                }
+            }
+        }
 }
