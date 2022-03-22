@@ -5,6 +5,10 @@ pipeline {
     Chaque étape doit spécifier sa propre section agent.
     */
 
+    options {
+        skipStagesAfterUnstable()
+    }
+
     stages {
         stage('Construction') { // Définit une étape appelée Construction qui apparaît sur l'interface utilisateur de Jenkins.
             agent {
@@ -38,6 +42,7 @@ pipeline {
                 */
             }
         }
+
         stage('Test') {  // Définit une étape appelée Test qui apparaît sur l'interface utilisateur de Jenkins.
             agent {
                 docker {
@@ -64,6 +69,61 @@ pipeline {
                     contient cette étape junit garantit que l'étape est toujours exécutée à la fin de l'étape Test, quel que 
                     soit le résultat de l'étape.
                     */
+                }
+            }
+        }
+
+        stage('Livraison') {  // Définit une étape appelée Livraison qui apparaît sur l'interface utilisateur de Jenkins.
+            agent any
+            environment {
+                // Ce bloc d'environnement définit deux variables qui seront utilisées plus tard dans l'étape "Livraison".
+                VOLUME = '$(pwd)/sources:/src'
+                IMAGE = 'cdrx/pyinstaller-linux:python2'
+            }
+            steps {
+                dir(path: env.BUILD_ID) {
+                    /*
+                    	Cette étape dir crée un nouveau sous-répertoire nommé par le numéro de build. 
+                        Le programme final sera créé dans ce répertoire par pyinstaller. 
+                        BUILD_ID est une des variables d'environnement prédéfinies de Jenkins et est 
+                        disponible dans tous les travaux.
+                    */
+                    unstash(name: 'compiled-results')
+                    /*
+                    Cette étape unstash restaure le code source Python et les fichiers de code d'octet compilés 
+                    (avec l'extension .pyc) à partir de l'image stash sauvegardée précédemment
+                    (si elle n'est pas déjà disponible sur votre machine) et exécute cette image comme un conteneur 
+                    séparé. Cela signifie que :
+                    Vous aurez des conteneurs Jenkins et PyInstaller (pour Linux) séparés fonctionnant localement dans Docker.
+                    Le conteneur PyInstaller devient l'agent que Jenkins utilise pour exécuter l'étape Deliver de votre projet 
+                    Pipeline. La durée de vie de ce conteneur est égale à la durée d'exécution de l'étape Deliver.
+                    */
+                    sh "docker run --rm -v ${VOLUME} ${IMAGE} 'pyinstaller -F add2vals.py'"
+                    /*
+                    Cette étape sh (de la section des étapes) exécute la commande pyinstaller (dans le conteneur PyInstaller) 
+                    sur votre application Python simple. Cela regroupe votre application Python add2vals.py dans un seul 
+                    fichier exécutable autonome (via l'option --onefile) et envoie ce fichier dans le répertoire dist workspace 
+                    (dans le répertoire d'origine de Jenkins). Bien que cette étape consiste en une seule commande, en règle 
+                    générale, il est préférable de garder le code de votre Pipeline (c'est-à-dire le fichier Jenkins) aussi 
+                    ordonné que possible et de placer les étapes de construction plus complexes (en particulier pour les étapes 
+                    composées de 2 ou plusieurs étapes) dans des fichiers de script shell séparés comme le fichier deliver.sh. 
+                    En fin de compte, cela facilite la maintenance du code de votre Pipeline, surtout si votre Pipeline devient 
+                    plus complexe.
+                    */
+                }
+            }
+            post {
+                success {
+                    archiveArtifacts "${env.BUILD_ID}/sources/dist/add2vals"
+                    /*
+                    L'étape archiveArtifacts (fournie dans le noyau de Jenkins) archive le fichier exécutable autonome 
+                    (généré par la commande pyinstaller ci-dessus dans le répertoire dist/add2vals de l'espace de travail de 
+                    Jenkins) et expose ce fichier à travers l'interface de Jenkins. Dans Blue Ocean, les artefacts archivés 
+                    comme ceux-ci sont accessibles via la page Artifacts d'une exécution Pipeline. La condition de succès de 
+                    la section post qui contient cette étape archiveArtifacts garantit que l'étape est exécutée à la fin de
+                    l'étape Deliver uniquement si cette étape s'est terminée avec succès.
+                    */
+                    sh "docker run --rm -v ${VOLUME} ${IMAGE} 'rm -rf build dist'"
                 }
             }
         }
