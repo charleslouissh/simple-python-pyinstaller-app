@@ -78,7 +78,8 @@ pipeline {
             environment {
                 // Ce bloc d'environnement définit deux variables qui seront utilisées plus tard dans l'étape "Livraison".
                 VOLUME = '$(pwd)/sources:/src'
-                IMAGE = 'cdrx/pyinstaller-linux:python2'
+                // IMAGE = 'cdrx/pyinstaller-linux:python2'
+                IMAGE = 'cdrx/pyinstaller-windows:python2'
             }
             steps {
                 dir(path: env.BUILD_ID) {
