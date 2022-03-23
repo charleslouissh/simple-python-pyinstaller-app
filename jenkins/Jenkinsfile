@@ -78,8 +78,8 @@ pipeline {
             environment {
                 // Ce bloc d'environnement définit deux variables qui seront utilisées plus tard dans l'étape "Livraison".
                 VOLUME = '$(pwd)/sources:/src'
-                IMAGE = 'cdrx/pyinstaller-linux:python2'
-                // IMAGE = 'cdrx/pyinstaller-windows:python2'
+                // IMAGE = 'cdrx/pyinstaller-linux:python2'
+                IMAGE = 'cdrx/pyinstaller-windows:python2'
             }
             steps {
                 dir(path: env.BUILD_ID) {
@@ -115,7 +115,7 @@ pipeline {
             }
             post {
                 success {
-                    archiveArtifacts "${env.BUILD_ID}/sources/dist/add2vals"
+                    archiveArtifacts "${env.BUILD_ID}/sources/dist/add2vals.exe"
                     /*
                     L'étape archiveArtifacts (fournie dans le noyau de Jenkins) archive le fichier exécutable autonome 
                     (généré par la commande pyinstaller ci-dessus dans le répertoire dist/add2vals de l'espace de travail de 
